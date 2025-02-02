@@ -4,6 +4,17 @@ from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import os
+import json
+
+# Load credentials from config.json
+def load_credentials():
+    with open("config.json", "r") as file:
+        return json.load(file)
+
 
 features = [
     "temperature",
@@ -16,6 +27,40 @@ features = [
 st.write("Predictive Modeling for Future Fire Occurances!")
 file = st.file_uploader("Upload environmental data csv:", type="csv")
 
+
+def send_email(sender,recipients, subject, body):
+    """
+    Sends an email to multiple recipients using SMTP.
+    :param recipients: List of email addresses.
+    :param subject: Email subject.
+    :param body: Email body.
+    """
+    SMTP_SERVER = "smtp.gmail.com"  # Change as per provider
+    SMTP_PORT = 587
+    SENDER_EMAIL =  sender["email"]# Use environment variable for security
+    SENDER_PASSWORD = sender["password"]
+    print(SENDER_EMAIL)
+    print(SENDER_PASSWORD)
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()  # Secure the connection
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        for recipient in recipients:
+            msg = MIMEMultipart()
+            msg["From"] = SENDER_EMAIL
+            msg["To"] = recipient
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
+
+            server.sendmail(SENDER_EMAIL, recipient, msg.as_string())
+
+
+            print(f"✅ Email sent successfully to {recipient}")
+
+        server.quit()
+    except Exception as e:
+        print(f"❌ Error sending email: {str(e)}")
 
 @st.cache_resource
 def train_model():
@@ -51,3 +96,10 @@ if file is not None:
     data = data[data["color"].notnull()]
     st.map(data, color="color")
     st.write(data)
+
+    sender = load_credentials()
+    recipients = ["testdummy20240102@gmail.com"]
+    subject = "🔥 Wildfire Alert: Predictions Generated!"
+    body = f"Hello,\n\nThe wildfire prediction model has generated new results. Check them in the dashboard.\n\nBest,\nDEVFIGHTERS Team"
+    send_email(sender, recipients, subject, body)
+    st.success("Email notification sent successfully! ✅")
