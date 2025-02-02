@@ -13,8 +13,8 @@ features = [
     "vegetation_index",
     "human_activity_index",
 ]
-st.write("Hello World!")
-file = st.file_uploader("Upload a file")
+st.write("Predictive Modeling for Future Fire Occurances!")
+file = st.file_uploader("Upload environmental data csv:", type="csv")
 
 
 @st.cache_resource
@@ -49,5 +49,5 @@ if file is not None:
         {"low": "#00FF00", "medium": "#FFFF00", "high": "#FF0000"}
     )
     data = data[data["color"].notnull()]
-    st.write(data)
     st.map(data, color="color")
+    st.write(data)
