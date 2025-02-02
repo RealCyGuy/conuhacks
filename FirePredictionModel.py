@@ -39,8 +39,7 @@ def send_email(sender,recipients, subject, body):
     SMTP_PORT = 587
     SENDER_EMAIL =  sender["email"]# Use environment variable for security
     SENDER_PASSWORD = sender["password"]
-    print(SENDER_EMAIL)
-    print(SENDER_PASSWORD)
+
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()  # Secure the connection
@@ -95,11 +94,27 @@ if file is not None:
     )
     data = data[data["color"].notnull()]
     st.map(data, color="color")
-    st.write(data)
 
-    sender = load_credentials()
-    recipients = ["testdummy20240102@gmail.com"]
-    subject = "🔥 Wildfire Alert: Predictions Generated!"
-    body = f"Hello,\n\nThe wildfire prediction model has generated new results. Check them in the dashboard.\n\nBest,\nDEVFIGHTERS Team"
-    send_email(sender, recipients, subject, body)
-    st.success("Email notification sent successfully! ✅")
+    # Convert severity to numerical values
+    severity_mapping = {"low": 1, "medium": 3, "high": 5}  # Adjusted scale
+    data["severity"] = data["severity"].map(severity_mapping)
+
+    # Filter high-severity fires (numerical comparison works now)
+    severe_cases = data[data["severity"] >= 5]
+
+    if not severe_cases.empty:
+        sender = load_credentials()
+        recipients = ["testdummy20240102@gmail.com"]
+        subject = "🔥 Wildfire Alert: High Severity Predictions Generated!"
+
+        # Create Google Maps links for each location
+        location_details = "\n".join(
+            [
+                f"Latitude: {row['latitude']}, Longitude: {row['longitude']} - View on Map: https://www.google.com/maps?q={row['latitude']},{row['longitude']}"
+                for _, row in severe_cases.iterrows()
+            ]
+        )
+        body = f"Hello,\n\nThe wildfire prediction model has detected high severity fires in the following locations:\n\n{location_details}\n\nPlease take necessary actions.\n\nBest,\nDEVFIGHTERS Team"
+
+        send_email(sender, recipients, subject, body)
+        st.success("Email notification sent successfully for high severity fires! ✅")
