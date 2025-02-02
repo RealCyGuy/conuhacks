@@ -1,14 +1,16 @@
+import json
+import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 import streamlit as st
 from pandas import read_csv
 from scipy.stats import randint
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import os
-import json
+
 
 # Load credentials from config.json
 def load_credentials():
@@ -28,7 +30,7 @@ st.write("Predictive Modeling for Future Fire Occurances!")
 file = st.file_uploader("Upload environmental data csv:", type="csv")
 
 
-def send_email(sender,recipients, subject, body):
+def send_email(sender, recipients, subject, body):
     """
     Sends an email to multiple recipients using SMTP.
     :param recipients: List of email addresses.
@@ -37,7 +39,7 @@ def send_email(sender,recipients, subject, body):
     """
     SMTP_SERVER = "smtp.gmail.com"  # Change as per provider
     SMTP_PORT = 587
-    SENDER_EMAIL =  sender["email"]# Use environment variable for security
+    SENDER_EMAIL = sender["email"]  # Use environment variable for security
     SENDER_PASSWORD = sender["password"]
 
     try:
@@ -54,12 +56,12 @@ def send_email(sender,recipients, subject, body):
 
             server.sendmail(SENDER_EMAIL, recipient, msg.as_string())
 
-
             print(f"✅ Email sent successfully to {recipient}")
 
         server.quit()
     except Exception as e:
         print(f"❌ Error sending email: {str(e)}")
+
 
 @st.cache_resource
 def train_model():
@@ -94,13 +96,9 @@ if file is not None:
     )
     data = data[data["color"].notnull()]
     st.map(data, color="color")
+    st.write(data)
 
-    # Convert severity to numerical values
-    severity_mapping = {"low": 1, "medium": 3, "high": 5}  # Adjusted scale
-    data["severity"] = data["severity"].map(severity_mapping)
-
-    # Filter high-severity fires (numerical comparison works now)
-    severe_cases = data[data["severity"] >= 5]
+    severe_cases = data[data["severity"] == "high"]
 
     if not severe_cases.empty:
         sender = load_credentials()
